@@ -14,6 +14,7 @@ export default function Home() {
   const [itemQuantity, setItemQuantity] = useState('');
   const [currentItem, setCurrentItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState('');
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, 'inventory'));
@@ -83,9 +84,12 @@ export default function Home() {
     setCurrentItem(null);
     setItemName('');
     setItemQuantity('');
+    setError('');
   }
+  
   const handleSearchOpen = () => setSearchOpen(true);
   const handleSearchClose = () => setSearchOpen(false);
+
   const handleSearchClear = () => setSearchQuery('');
 
   const handleEditClick = (item) => {
@@ -94,11 +98,19 @@ export default function Home() {
     setItemQuantity(item.quantity);
     setOpen(true);
   }
-  const handleSave = () => {
+
+  const handleSave = async () => {
+    if (!itemName || !itemQuantity) {
+      setError('Both fields are required.');
+      return;
+    }
+
+    setError('');
+
     if (currentItem) {
-      modifyItem(currentItem.name, itemName, Number(itemQuantity));
+      await modifyItem(currentItem.name, itemName, Number(itemQuantity));
     } else {
-      addItem(itemName, Number(itemQuantity));
+      await addItem(itemName, Number(itemQuantity));
     }
     handleClose();
   }
@@ -140,12 +152,26 @@ export default function Home() {
         <Box position='absolute' top='50%' left='50%' sx={{ transform: 'translate(-50%,-50%)', }} width={400} bgcolor='white' border='2px solid #000' boxShadow={24} p={4} display='flex' flexDirection='column' gap={3}>
           <Typography variant='h6'>{currentItem ? 'Edit Item' : 'Add Item'}</Typography>
           <Stack width='100%' direction='row' spacing={2}>
-            <TextField variant='outlined' fullWidth value={itemName} onChange={(e) => setItemName(e.target.value)} />
-            <TextField variant='outlined' fullWidth type='number' value={itemQuantity} onChange={(e) => setItemQuantity(e.target.value)} />
+            <TextField 
+              variant='outlined' 
+              fullWidth 
+              value={itemName} 
+              onChange={(e) => setItemName(e.target.value)} 
+              placeholder='Item Name'
+            />
+            <TextField 
+              variant='outlined' 
+              fullWidth 
+              type='number' 
+              value={itemQuantity} 
+              onChange={(e) => setItemQuantity(e.target.value)} 
+              placeholder='Quantity'
+            />
             <Button variant='outlined' onClick={handleSave}>
               {currentItem ? 'Save' : 'Add'}
             </Button>
           </Stack>
+          {error && <Typography color='error'>{error}</Typography>}
         </Box>
       </Modal>
       <Button variant='contained' onClick={handleOpen}>
