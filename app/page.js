@@ -4,8 +4,8 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import {firestore} from '@/firebase';
 import { Box, Typography, Modal, Stack, TextField, Button} from '@mui/material';
-import { collection, getDocs, query, setDoc, deleteDoc } from "firebase/firestore";
-
+import { collection, getDocs, query, getDoc, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { CiEdit } from "react-icons/ci";
 
 export default function Home() {
   const [ inventory, setInventory ] = useState([]);
@@ -24,32 +24,14 @@ export default function Home() {
     });
     setInventory(inventoryList);
   }
-  
-  useEffect(()=> {
-    updateInventory();
-  }, []);
 
-  const removeItem = async(item) => {
-    const docRef = doc(collection(firestore, 'inventory'),item);
-    const docSnap = await getDocs(docRef);
-
-    if (docSnap.exists()) {
-      const {quantity} = docSnap.data().count;
-      if (quantity == 1) {
-        await deleteDoc(docRef);
-      }
-      else {
-        await setDoc(docRef, {quantity: quantity - 1});
-      }
-    }
-  }
 
   const addItem = async(item) => {
     const docRef = doc(collection(firestore, 'inventory'),item);
-    const docSnap = await getDocs(docRef);
+    const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      const {quantity} = docSnap.data().count;
+      const {quantity} = docSnap.data();
       await setDoc(docRef, {quantity: quantity + 1});
       }
     else {
@@ -58,6 +40,26 @@ export default function Home() {
 
   await updateInventory();
   }
+
+  const removeItem = async(item) => {
+    const docRef = doc(collection(firestore, 'inventory'),item);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const {quantity} = docSnap.data();
+      if (quantity === 1) {
+        await deleteDoc(docRef);
+      } else {
+        await setDoc(docRef, {quantity: quantity - 1});
+      }
+    }
+
+    await updateInventory();
+  }
+
+  useEffect(() => {
+    updateInventory();
+  }, [])
 
 
   const handleOpen = () => setOpen(true);
@@ -97,10 +99,14 @@ export default function Home() {
       <Stack width = '800px' height = '300px' spacing = {2} overflow = 'auto'>
             {
               inventory.map(({name, quantity}) => (
-                <Box key={name} width='100px' minHeight = '150px' display = 'flex' alignItems = 'center' justifyContent = 'space-between' bgcolor = '#f0f0f0' padding = {5}>
+                <Box key={name} width='100%' minHeight = '150px' display = 'flex' alignItems = 'center' justifyContent = 'space-between' bgcolor = '#f0f0f0' padding = {5}>
                   <Typography variant = 'h3' color = '#333' textAlign = 'center'>{name.charAt(0).toUpperCase() + name.slice(1)}</Typography>
+
                   <Typography variant = 'h3' color = '#333' textAlign = 'center'>{quantity}</Typography>
-                  <Button variant = 'contained' onClick = {() => removeItem(name)}>Remove</Button>
+                  <Stack direction = 'row' spacing = {2}>
+                  <Button variant = 'contained' onClick = {() => addItem(name)}>+</Button>
+                  <Button variant = 'contained' onClick = {() => removeItem(name)}>-</Button>
+                  </Stack>
                 </Box>
               ))}
       </Stack>
